@@ -1,0 +1,61 @@
+#include <Servo.h>
+
+const int trigPin = 8;
+const int echoPin = 9;
+Servo myServo;
+
+long duration;
+int distance;
+int servoPos = 0;
+bool isSweeping = false;
+
+void setup() {
+  Serial.begin(9600);
+  myServo.attach(11);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    char command = Serial.read();
+    if (command == 'S') {
+      isSweeping = true;
+    } else if (command == 'T') {
+      isSweeping = false;
+    }
+  }
+
+  if (isSweeping) {
+    for (servoPos = 0; servoPos <= 180; servoPos += 1) {
+      myServo.write(servoPos);
+      delay(20);
+      measureDistance();
+      sendData(servoPos, distance);
+    }
+
+    for (servoPos = 180; servoPos >= 0; servoPos -= 1) {
+      myServo.write(servoPos);
+      delay(20);
+      measureDistance();
+      sendData(servoPos, distance);
+    }
+  }
+}
+
+void measureDistance() {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  duration = pulseIn(echoPin, HIGH);
+  distance = duration * 0.034 / 2;
+}
+
+void sendData(int pos, int dist) {
+  Serial.print("Position: ");
+  Serial.print(pos);
+  Serial.print(", Distance: ");
+  Serial.println(dist);
+}
