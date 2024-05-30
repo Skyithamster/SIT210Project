@@ -1,0 +1,57 @@
+import sys
+import serial
+from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QPushButton, QHBoxLayout
+from PyQt5.QtCore import QTimer, Qt
+
+class RadarGUI(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        self.initUI()
+        self.ser = serial.Serial('/dev/ttyACM0', 9600)  # Adjust serial port as necessary
+
+    def initUI(self):
+        self.setWindowTitle('Radar System')
+        self.setGeometry(100, 100, 400, 200)
+
+        self.label = QLabel('Distance: ', self)
+        self.label.setAlignment(Qt.AlignCenter)
+
+        self.startButton = QPushButton('Start', self)
+        self.startButton.clicked.connect(self.startSweep)
+        self.stopButton = QPushButton('Stop', self)
+        self.stopButton.clicked.connect(self.stopSweep)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.label)
+
+        buttonLayout = QHBoxLayout()
+        buttonLayout.addWidget(self.startButton)
+        buttonLayout.addWidget(self.stopButton)
+
+        layout.addLayout(buttonLayout)
+
+        container = QWidget()
+        container.setLayout(layout)
+        self.setCentralWidget(container)
+
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.updateData)
+        self.timer.start(100)
+
+    def startSweep(self):
+        self.ser.write(b'S')
+
+    def stopSweep(self):
+        self.ser.write(b'T')
+
+    def updateData(self):
+        if self.ser.in_waiting > 0:
+            data = self.ser.readline().decode('utf-8').strip()
+            self.label.setText(f'Distance: {data}')
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    radarGUI = RadarGUI()
+    radarGUI.show()
+    sys.exit(app.exec_())
